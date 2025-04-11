@@ -1,4 +1,7 @@
 -- Create Users Table
+CREATE DATABASE IF NOT EXISTS finance_tracker;
+USE finance_tracker;
+
 CREATE TABLE users (
     user_id INT PRIMARY KEY AUTO_INCREMENT,
     full_name VARCHAR(100) NOT NULL,
@@ -37,7 +40,7 @@ CREATE TABLE income (
 );
 
 -- Create Expense Table
-CREATE TABLE expense (
+CREATE TABLE expenses (
     expense_id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT,
     category_id INT,

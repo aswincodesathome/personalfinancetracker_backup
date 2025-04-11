@@ -1,0 +1,17 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Run Flask App (backend)",
+        "type": "python",
+        "request": "launch",
+        "module": "backend.app",
+        "justMyCode": true,
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "FLASK_ENV": "development"
+        }
+      }
+    ]
+  }
+  
