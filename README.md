@@ -1,1 +1,1 @@
-#One can track their finances using the Personal Finance Tracker
+One can track their finances using the Personal Finance Tracker
