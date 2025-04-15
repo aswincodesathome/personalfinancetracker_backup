@@ -59,7 +59,7 @@ CREATE TABLE budget (
     user_id INT,
     category_id INT NOT NULL,
     amount DECIMAL(10, 2) NOT NULL CHECK (amount >= 0),
-    month YEAR(4),
+    month VARCHAR(7),
     FOREIGN KEY (user_id) REFERENCES users(user_id),
     FOREIGN KEY (category_id) REFERENCES category(category_id)
 );

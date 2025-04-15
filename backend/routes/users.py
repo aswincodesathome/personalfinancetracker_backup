@@ -4,7 +4,8 @@ from config import get_db_connection
 
 users_bp = Blueprint('users', __name__)
 
-@users_bp.route('/', methods=['POST'])  # POST /users
+@users_bp.route('/register', methods=['POST'])  # ✅ NEW
+  # POST /users
 def create_user():
     data = request.get_json()
     full_name = data.get('full_name')
