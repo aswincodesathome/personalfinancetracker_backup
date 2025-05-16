@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chatbot | FinanceTracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .chat-bubble {
+      max-width: 70%;
+      padding: 0.75rem 1rem;
+      margin-bottom: 0.5rem;
+      border-radius: 1rem;
+      word-wrap: break-word;
+    }
+    .bot {
+      background-color: #f1f5f9;
+      align-self: flex-start;
+    }
+    .user {
+      background-color: #4f46e5;
+      color: white;
+      align-self: flex-end;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 font-sans">
+
+  <!-- Header -->
+  <header class="bg-indigo-600 text-white py-4 px-6 shadow">
+    <h1 class="text-2xl font-bold">💬 Chat with FinBot</h1>
+    <p class="text-sm text-indigo-200">Your smart finance assistant</p>
+  </header>
+
+  <!-- Chat Section -->
+  <main class="max-w-3xl mx-auto mt-6 px-4 pb-20">
+    <div id="chatbox" class="flex flex-col gap-2 h-[70vh] overflow-y-auto bg-white p-4 rounded-xl shadow-md">
+      <div class="chat-bubble bot">Hi there! I'm FinBot 🧠<br>Ask me anything about your finances!</div>
+    </div>
+
+    <!-- Input -->
+    <div class="fixed bottom-0 left-0 w-full bg-white shadow-inner px-4 py-3">
+      <div class="max-w-3xl mx-auto flex items-center gap-2">
+        <input id="userInput" type="text" placeholder="Type your message..." class="flex-1 border border-gray-300 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"/>
+        <button onclick="sendMessage()" class="bg-indigo-600 text-white px-4 py-2 rounded-full hover:bg-indigo-700 transition">Send</button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    function sendMessage() {
+      const input = document.getElementById('userInput');
+      const message = input.value.trim();
+      if (message === '') return;
+
+      const chatbox = document.getElementById('chatbox');
+
+      // User message
+      const userMsg = document.createElement('div');
+      userMsg.className = 'chat-bubble user self-end';
+      userMsg.innerText = message;
+      chatbox.appendChild(userMsg);
+
+      // Bot reply
+      const botMsg = document.createElement('div');
+      botMsg.className = 'chat-bubble bot self-start';
+      botMsg.innerText = generateReply(message);
+      setTimeout(() => {
+        chatbox.appendChild(botMsg);
+        chatbox.scrollTop = chatbox.scrollHeight;
+      }, 600);
+
+      input.value = '';
+    }
+
+    function generateReply(msg) {
+      msg = msg.toLowerCase();
+      if (msg.includes("expense")) return "To view or add expenses, head to the 'Add Expense' page!";
+      if (msg.includes("hello") || msg.includes("hi")) return "Hey hey! 👋 How can I assist you today?";
+      if (msg.includes("income")) return "Your income details are available on the dashboard.";
+      return "Sorry, I'm still learning that. Try asking something about your finances.";
+    }
+  </script>
+</body>
+</html>

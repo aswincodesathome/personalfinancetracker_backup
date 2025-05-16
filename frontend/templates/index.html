@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Personal Finance Tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<!-- Floating Chatbot Button -->
+<a href="chatbot.html"
+   class="fixed bottom-6 right-6 bg-indigo-600 text-white p-4 rounded-full shadow-lg hover:bg-indigo-700 transition-all z-50"
+   title="Chat with FinBot">
+  💬
+</a>
+
+<body class="bg-gradient-to-b from-slate-100 to-white text-gray-800 font-sans">
+
+  <!-- Navbar -->
+  <nav class="bg-white shadow-md">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+      <h1 class="text-2xl font-bold text-indigo-600">FinanceTracker</h1>
+      <div class="space-x-6 text-sm font-medium">
+        <a href="#" class="text-indigo-600 font-semibold">Home</a>
+        <a href="dashboard.html" class="hover:text-indigo-600">Dashboard</a>
+        <a href="add_expense.html" class="hover:text-indigo-600">Add Expense</a>
+        <a href="http://127.0.0.1:5000/users/login" class="hover:text-indigo-600">Login</a> <!-- Updated -->
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="max-w-7xl mx-auto px-4 py-20 grid md:grid-cols-2 items-center">
+    <div>
+      <h2 class="text-4xl md:text-5xl font-bold text-slate-800 mb-4">Take Control of Your Expenses</h2>
+      <p class="text-lg text-gray-600 mb-6">Track, Analyze & Save — all in one place.</p>
+      <a href="http://127.0.0.1:5000/users/login" class="inline-block bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition">Get Started</a> <!-- Updated -->
+    </div>
+    <div class="hidden md:block">
+      <img src="https://cdn-icons-png.flaticon.com/512/2920/2920256.png" alt="Finance Illustration" class="w-full max-w-md mx-auto drop-shadow-md">
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="bg-white py-16">
+    <div class="max-w-6xl mx-auto px-4 text-center">
+      <h3 class="text-2xl font-semibold text-slate-800 mb-10">Why Use FinanceTracker?</h3>
+      <div class="grid md:grid-cols-3 gap-8">
+        <div class="p-6 bg-indigo-50 rounded-xl shadow hover:shadow-md transition">
+          <h4 class="font-bold text-lg mb-2 text-indigo-700">Track Your Spending</h4>
+          <p class="text-gray-700 text-sm">Add, edit and delete expenses with ease.</p>
+        </div>
+        <div class="p-6 bg-indigo-50 rounded-xl shadow hover:shadow-md transition">
+          <h4 class="font-bold text-lg mb-2 text-indigo-700">View Monthly Analytics</h4>
+          <p class="text-gray-700 text-sm">Visual charts and summaries of your habits.</p>
+        </div>
+        <div class="p-6 bg-indigo-50 rounded-xl shadow hover:shadow-md transition">
+          <h4 class="font-bold text-lg mb-2 text-indigo-700">Secure Login System</h4>
+          <p class="text-gray-700 text-sm">All your data is protected and safe.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-slate-100 py-6 mt-10 border-t">
+    <div class="max-w-7xl mx-auto px-4 flex justify-between text-sm text-gray-600">
+      <p>© 2025 FinanceTracker. All rights reserved.</p>
+      <div class="space-x-4">
+        <a href="#" class="hover:text-indigo-600">Privacy</a>
+        <a href="#" class="hover:text-indigo-600">Terms</a>
+        <a href="#" class="hover:text-indigo-600">Contact</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

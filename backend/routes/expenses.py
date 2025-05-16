@@ -1,94 +1,84 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, render_template, flash, redirect, url_for
 from config import get_db_connection
 import mysql.connector
 
 expenses_bp = Blueprint('expenses', __name__)
 
-@expenses_bp.route('/', methods=['POST'])
-def add_expense():
-    data = request.get_json()
-
-    user_id = data.get('user_id')
-    amount = data.get('amount')
-    spent_on = data.get('spent_on')  # Should be YYYY-MM-DD format
-    description = data.get('description')
-    category_id = data.get('category_id')
-    payment_method_id = data.get('payment_method_id')
-
-    if not all([user_id, amount, spent_on, category_id, payment_method_id]):
-        return jsonify({"error": "Missing required fields"}), 400
-
+@expenses_bp.route('/add_expense/<int:user_id>', methods=['GET'])
+def add_expense_page(user_id):
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cursor = conn.cursor(dictionary=True)
 
     try:
+        # Load category options
+        cursor.execute("SELECT category_id, name FROM category")
+        categories = cursor.fetchall()
+
+        # Load payment method options (from updated table)
+        cursor.execute("SELECT payment_method_id, method_name FROM payment_method")
+        payment_methods = cursor.fetchall()
+
+        return render_template('add_expense.html', user_id=user_id, categories=categories, payment_methods=payment_methods)
+
+    except mysql.connector.Error as err:
+        flash(f"Error loading form options: {err}", "error")
+        return render_template('add_expense.html', user_id=user_id, categories=[], payment_methods=[])
+
+    finally:
+        cursor.close()
+        conn.close()
+@expenses_bp.route('/expense/<int:user_id>', methods=['POST'])
+def add_expense(user_id):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    spent_on = request.form.get('spent_on')
+    category_name = request.form.get('category_name')
+    description = request.form.get('description')
+    amount = request.form.get('amount')
+    payment_method_name = request.form.get('payment_method_name')
+
+    try:
+        # ✅ Ensure no unread results remain
+        cursor.reset()
+
+        # ✅ Get category_id
+        cursor.execute("SELECT category_id FROM category WHERE name = %s", (category_name,))
+        category = cursor.fetchone()
+        if not category:
+            flash("Invalid category name.", "error")
+            return redirect(url_for('expenses.add_expense_page', user_id=user_id))
+        category_id = category['category_id']
+
+        cursor.reset()
+
+        # ✅ Get payment_method_id (without user_id filter)
+        cursor.execute("SELECT payment_method_id FROM payment_method WHERE method_name = %s", (payment_method_name,))
+        method = cursor.fetchone()
+        if not method:
+            flash("Invalid payment method.", "error")
+            return redirect(url_for('expenses.add_expense_page', user_id=user_id))
+        payment_method_id = method['payment_method_id']
+
+
+
+        cursor.reset()
+
+        # ✅ Insert expense
         cursor.execute("""
-            INSERT INTO expenses (user_id, amount, spent_on, description, category_id, payment_method_id)
+            INSERT INTO expenses (user_id, spent_on, category_id, description, amount, payment_method_id)
             VALUES (%s, %s, %s, %s, %s, %s)
-        """, (user_id, amount, spent_on, description, category_id, payment_method_id))
-        
+        """, (user_id, spent_on, category_id, description, amount, payment_method_id))
+
         conn.commit()
-        return jsonify({"message": "Expense added successfully!"}), 201
+        flash('Expense added successfully!', 'success')
+        return redirect(url_for('users.dashboard', user_id=user_id))
 
     except mysql.connector.Error as err:
-        return jsonify({"error": str(err)}), 500
+        flash(f"Error adding expense: {err}", "error")
+        return redirect(url_for('expenses.add_expense_page', user_id=user_id))
 
     finally:
         cursor.close()
         conn.close()
 
-# GET /expenses/<user_id> → List of expenses
-@expenses_bp.route('/<int:user_id>', methods=['GET'])
-def get_expenses(user_id):
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-
-    try:
-        cursor.execute("""
-            SELECT 
-                e.expense_id,
-                e.amount,
-                e.spent_on,
-                e.description,
-                c.name AS category,
-                pm.method_name AS payment_method
-            FROM expenses e
-            JOIN category c ON e.category_id = c.category_id
-            JOIN payment_methods pm ON e.payment_method_id = pm.method_id
-            WHERE e.user_id = %s
-            ORDER BY e.spent_on DESC
-        """, (user_id,))
-        
-        expenses = cursor.fetchall()
-        return jsonify(expenses)
-
-    except mysql.connector.Error as err:
-        return jsonify({"error": str(err)})
-    finally:
-        cursor.close()
-        conn.close()
-
-# GET /expenses/summary/<user_id> → Total summary
-@expenses_bp.route('/summary/<int:user_id>', methods=['GET'])
-def get_total_expense_summary(user_id):
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-
-    try:
-        cursor.execute("""
-            SELECT SUM(amount) AS total_expense
-            FROM expenses
-            WHERE user_id = %s
-        """, (user_id,))
-        
-        result = cursor.fetchone()
-        return jsonify({
-            "user_id": user_id,
-            "total_expense": result['total_expense'] or 0.00
-        })
-
-    except mysql.connector.Error as err:
-        return jsonify({"error": str(err)})
-    finally:
-        cursor.close()
-        conn.close()

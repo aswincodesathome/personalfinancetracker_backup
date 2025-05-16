@@ -13,4 +13,4 @@ try:
     print("✅ Connected to MySQL database successfully!")
     conn.close()
 except mysql.connector.Error as err:
-    print("❌ Database connection failed:", err)
+    print(" Database connection failed:", err)

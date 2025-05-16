@@ -1,89 +1,117 @@
-from flask import Blueprint, request, jsonify
-from config import get_db_connection
-import mysql.connector
+from flask import Blueprint, render_template, request, redirect, jsonify, session
+from models.goal import Goal
+from models.expense import Expense
+from models.income import Income
+from db import db
+from sqlalchemy import func
 
-goals_bp = Blueprint('goals', __name__)
+goals_bp = Blueprint('goals_bp', __name__, url_prefix='/goals')
 
-# 1. Add new goal
-@goals_bp.route('/goals', methods=['POST'])
+
+# Route to render the main goals page with current balance
+@goals_bp.route('/goals-page', methods=['GET'])
+def goals_page():
+    if 'user_id' not in session:
+        return redirect('/login')
+
+    user_id = session['user_id']
+    try:
+        goals = Goal.get_all_goals(user_id)
+        total_income = db.session.query(func.sum(Income.amount)).filter_by(user_id=user_id).scalar() or 0.00
+        total_expense = db.session.query(func.sum(Expense.amount)).filter_by(user_id=user_id).scalar() or 0.00
+        balance = total_income - total_expense
+    except Exception:
+        goals = []
+        balance = 0.00
+
+    return render_template('goals.html', user_id=user_id, goals=goals, balance=balance)
+
+
+# API to fetch all goals for the logged-in user (with progress = current balance)
+@goals_bp.route('/', methods=['GET'])
+def get_goals():
+    if 'user_id' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    user_id = session['user_id']
+    try:
+        goals = Goal.get_all_goals(user_id)
+        total_income = db.session.query(func.sum(Income.amount)).filter_by(user_id=user_id).scalar() or 0.00
+        total_expense = db.session.query(func.sum(Expense.amount)).filter_by(user_id=user_id).scalar() or 0.00
+        balance = total_income - total_expense
+
+        goals_list = [{
+            'goal_id': goal.goal_id,
+            'title': goal.title,
+            'target_amount': float(goal.target_amount),
+            'current_amount': float(goal.current_amount),
+            'deadline': goal.deadline.strftime('%Y-%m-%d'),
+            'progress': float(balance)
+        } for goal in goals]
+        return jsonify(goals_list), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# API to add a new goal
+@goals_bp.route('/', methods=['POST'])
 def add_goal():
+    if 'user_id' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+
     data = request.get_json()
-    user_id = data.get('user_id')
     title = data.get('title')
     target_amount = data.get('target_amount')
     deadline = data.get('deadline')
+    user_id = session['user_id']
 
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    try:
-        cursor.execute("""
-            INSERT INTO goals (user_id, title, target_amount, deadline)
-            VALUES (%s, %s, %s, %s)
-        """, (user_id, title, target_amount, deadline))
-        conn.commit()
-        return jsonify({"message": "Goal added successfully!"}), 201
-    except mysql.connector.Error as err:
-        return jsonify({"error": str(err)}), 500
-    finally:
-        cursor.close()
-        conn.close()
-
-# 2. Get all goals for a user
-@goals_bp.route('/goals/<int:user_id>', methods=['GET'])
-def get_goals(user_id):
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    if not all([title, target_amount, deadline]):
+        return jsonify({"error": "Missing required fields"}), 400
 
     try:
-        cursor.execute("""
-            SELECT goal_id, title, target_amount, current_amount, deadline
-            FROM goals
-            WHERE user_id = %s
-        """, (user_id,))
-        goals = cursor.fetchall()
-        return jsonify(goals)
-    except mysql.connector.Error as err:
-        return jsonify({"error": str(err)}), 500
-    finally:
-        cursor.close()
-        conn.close()
+        new_goal = Goal(
+            user_id=user_id,
+            title=title,
+            target_amount=target_amount,
+            deadline=deadline,
+            current_amount=0.00
+        )
+        db.session.add(new_goal)
+        db.session.commit()
+        return jsonify({"message": "Goal added successfully"}), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-# 3. Update current amount for a goal
-@goals_bp.route('/goals/<int:goal_id>', methods=['PUT'])
-def update_goal_progress(goal_id):
-    data = request.get_json()
-    current_amount = data.get('current_amount')
 
-    conn = get_db_connection()
-    cursor = conn.cursor()
+# API to get the user's current balance
+@goals_bp.route('/balance', methods=['GET'])
+def get_balance():
+    if 'user_id' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
 
+    user_id = session['user_id']
     try:
-        cursor.execute("""
-            UPDATE goals
-            SET current_amount = %s
-            WHERE goal_id = %s
-        """, (current_amount, goal_id))
-        conn.commit()
-        return jsonify({"message": "Goal updated successfully!"})
-    except mysql.connector.Error as err:
-        return jsonify({"error": str(err)}), 500
-    finally:
-        cursor.close()
-        conn.close()
+        total_income = db.session.query(func.sum(Income.amount)).filter_by(user_id=user_id).scalar() or 0.00
+        total_expense = db.session.query(func.sum(Expense.amount)).filter_by(user_id=user_id).scalar() or 0.00
+        balance = total_income - total_expense
+        return jsonify({"balance": float(balance)}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-# 4. Delete a goal
-@goals_bp.route('/goals/<int:goal_id>', methods=['DELETE'])
+
+# API to delete a goal
+@goals_bp.route('/<int:goal_id>', methods=['DELETE'])
 def delete_goal(goal_id):
-    conn = get_db_connection()
-    cursor = conn.cursor()
+    if 'user_id' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
 
     try:
-        cursor.execute("DELETE FROM goals WHERE goal_id = %s", (goal_id,))
-        conn.commit()
-        return jsonify({"message": "Goal deleted successfully!"})
-    except mysql.connector.Error as err:
-        return jsonify({"error": str(err)}), 500
-    finally:
-        cursor.close()
-        conn.close()
+        goal = Goal.query.get(goal_id)
+        if goal:
+            db.session.delete(goal)
+            db.session.commit()
+            return jsonify({"message": "Goal deleted successfully."}), 200
+        else:
+            return jsonify({"error": "Goal not found."}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

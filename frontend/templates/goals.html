@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Financial Goals</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #e3f2fd;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: auto;
+            padding: 40px 20px;
+        }
+
+        h1, h2 {
+            color: #0d47a1;
+            margin-bottom: 10px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        input, button {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+        }
+
+        button {
+            background-color: #0d47a1;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #1565c0;
+        }
+
+        .goal {
+            border-bottom: 1px solid #ddd;
+            padding: 15px 0;
+        }
+
+        .goal:last-child {
+            border-bottom: none;
+        }
+
+        .progress-bar {
+            background-color: #cfd8dc;
+            border-radius: 20px;
+            overflow: hidden;
+            height: 20px;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: #0d47a1;
+            width: 0%;
+            transition: width 0.4s ease-in-out;
+        }
+
+        .no-goals {
+            font-style: italic;
+            color: #888;
+        }
+
+        .completed {
+            color: green;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 My Financial Goals</h1>
+        <h3 style="color: #0d47a1;">Available Balance: ₹{{ '%.2f' % balance }}</h3>
+
+        <!-- Add Goal Section -->
+        <div class="card">
+            <h2>Add New Goal</h2>
+            <form id="goalForm">
+                <input type="text" id="title" placeholder="Goal Title" required>
+                <input type="number" id="target_amount" placeholder="Target Amount (₹)" step="0.01" min="0" required>
+                <input type="date" id="deadline" required>
+                <button type="submit">Add Goal</button>
+            </form>
+        </div>
+
+        <!-- View Goals Section -->
+        <div class="card">
+            <h2>View Goals</h2>
+            <div id="goalsContainer" class="goals-list"></div>
+        </div>
+    </div>
+
+    <script>
+        const goalForm = document.getElementById('goalForm');
+        const goalsContainer = document.getElementById('goalsContainer');
+
+        // Load goals on page load
+        window.onload = fetchGoals;
+
+        function fetchGoals() {
+            fetch('/goals')
+                .then(res => res.json())
+                .then(data => {
+                    goalsContainer.innerHTML = '';
+                    if (!Array.isArray(data) || data.length === 0) {
+                        goalsContainer.innerHTML = '<p class="no-goals">No goals found. Add your first goal above.</p>';
+                        return;
+                    }
+
+                    data.forEach(goal => {
+                        const percent = Math.min((goal.current_amount / goal.target_amount) * 100, 100).toFixed(1);
+                        const completed = percent >= 100;
+
+                        const div = document.createElement('div');
+                        div.className = 'goal';
+                        div.innerHTML = `
+                            <strong>${goal.title}</strong><br>
+                            Target: ₹${goal.target_amount} | Saved: ₹${goal.current_amount}<br>
+                            Deadline: ${goal.deadline}<br>
+                            Progress: ${percent}%
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width:${percent}%;"></div>
+                            </div>
+                            ${completed ? '<div class="completed">✅ Goal Completed!</div>' : ''}
+                        `;
+                        goalsContainer.appendChild(div);
+                    });
+                })
+                .catch(() => {
+                    goalsContainer.innerHTML = '<p class="no-goals">Something went wrong while loading goals.</p>';
+                });
+        }
+
+        goalForm.onsubmit = function (e) {
+            e.preventDefault();
+
+            const title = document.getElementById('title').value.trim();
+            const target_amount = parseFloat(document.getElementById('target_amount').value);
+            const deadline = document.getElementById('deadline').value;
+
+            if (!title || !target_amount || !deadline) {
+                alert("Please fill in all fields.");
+                return;
+            }
+
+            fetch('/goals', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, target_amount, deadline })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.message) {
+                    alert(data.message);
+                    fetchGoals();
+                    goalForm.reset();
+                } else {
+                    alert(data.error || 'Error adding goal.');
+                }
+            })
+            .catch(() => {
+                alert('Network error while adding goal.');
+            });
+        };
+    </script>
+</body>
+</html>

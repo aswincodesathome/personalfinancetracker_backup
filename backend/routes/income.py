@@ -1,55 +1,51 @@
-from flask import Blueprint, request, jsonify
-from config import get_db_connection
-import mysql.connector
+from flask import Blueprint, request, redirect, url_for, render_template, jsonify
+from models.income import Income
+from db import db
 
 income_bp = Blueprint('income', __name__)
 
-# ✅ Add new income
+# ✅ Show Add Income Form
+@income_bp.route('/add_income/<int:user_id>', methods=['GET'])
+def show_add_income(user_id):
+    return render_template('add_income.html', user_id=user_id)
+
+# ✅ Handle Income Form Submission (using SQLAlchemy)
 @income_bp.route('/income/<int:user_id>', methods=['POST'])
 def add_income(user_id):
-    data = request.get_json()
-    source = data.get('source')
-    amount = data.get('amount')
-    received_on = data.get('received_on')  # Format: YYYY-MM-DD
+    source = request.form.get('category')
+    amount = request.form.get('amount')
+    received_on_raw = request.form.get('date')
+    from datetime import datetime
+    received_on = datetime.strptime(received_on_raw, '%Y-%m-%d').date()
 
-    conn = get_db_connection()
-    cursor = conn.cursor()
+    new_income = Income(
+        amount=float(amount),
+        source=source,
+        received_on=received_on,  # ✅ FIXED
+        user_id=user_id
+    )
+
 
     try:
-        cursor.execute("""
-            INSERT INTO income (user_id, source, amount, received_on)
-            VALUES (%s, %s, %s, %s)
-        """, (user_id, source, amount, received_on))
+        db.session.add(new_income)
+        db.session.commit()
+        return redirect(url_for('users.dashboard'))  # Change this if dashboard route is different
+    except Exception as e:
+        db.session.rollback()
+        return f"Error: {str(e)}", 500
 
-        conn.commit()
-        return jsonify({"message": "Income added successfully!"}), 201
-
-    except mysql.connector.Error as err:
-        return jsonify({"error": str(err)}), 500
-    finally:
-        cursor.close()
-        conn.close()
-
-
-# ✅ Get all incomes
+# ✅ API: Get incomes for a user (optional API route)
 @income_bp.route('/income/<int:user_id>', methods=['GET'])
 def get_incomes(user_id):
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-
     try:
-        cursor.execute("""
-            SELECT income_id, source, amount, received_on
-            FROM income
-            WHERE user_id = %s
-            ORDER BY received_on DESC
-        """, (user_id,))
+        incomes = Income.query.filter_by(user_id=user_id).order_by(Income.date.desc()).all()
+        income_list = [{
+            'id': i.id,
+            'source': i.source,
+            'amount': i.amount,
+            'date': i.date
+        } for i in incomes]
 
-        incomes = cursor.fetchall()
-        return jsonify(incomes)
-
-    except mysql.connector.Error as err:
-        return jsonify({"error": str(err)}), 500
-    finally:
-        cursor.close()
-        conn.close()
+        return jsonify(income_list)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

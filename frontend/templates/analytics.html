@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Analytics</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #eaf1fb;
+      margin: 0;
+      padding: 0;
+      color: #2e2e2e;
+    }
+
+    header {
+      text-align: center;
+      padding: 40px 20px 20px;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      color: #34495e;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      font-size: 1rem;
+      color: #7f8c8d;
+    }
+
+    .line {
+      width: 60px;
+      height: 3px;
+      background: linear-gradient(90deg, #5B86E5, #36D1DC);
+      margin: 16px auto 0;
+      border-radius: 10px;
+    }
+
+    .charts-wrapper {
+      max-width: 1100px;
+      margin: 40px auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      padding: 0 20px;
+    }
+
+    .chart-box {
+      background-color: #ffffff;
+      border-radius: 14px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .chart-box h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: #2c3e50;
+    }
+
+    .chart-box canvas {
+      max-width: 100%;
+      max-height: 300px;
+    }
+
+    .full-width-chart {
+      grid-column: 1 / -1;
+    }
+
+    @media (max-width: 768px) {
+      .charts-wrapper {
+        grid-template-columns: 1fr;
+        gap: 30px;
+      }
+
+      .chart-box canvas {
+        max-height: 250px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Expense Analytics</h1>
+    <div class="line"></div>
+    <p class="subtitle">Interactive insights into your financial activity</p>
+  </header>
+
+  <section class="charts-wrapper">
+    <div class="chart-box">
+      <h3>Monthly Expenses (₹)</h3>
+      <canvas id="expensesChart"></canvas>
+    </div>
+
+    <div class="chart-box">
+      <h3>Top 5 Spending Categories</h3>
+      <canvas id="categoryChart" width="300" height="300"></canvas>
+    </div>
+
+    <div class="chart-box full-width-chart">
+      <h3>Daily Spending (Last 30 Days)</h3>
+      <canvas id="dailyChart"></canvas>
+    </div>
+  </section>
+
+  <script>
+    const userId = {{ user_id | tojson }};
+
+    async function fetchData(endpoint) {
+      const res = await fetch(`/analytics/${endpoint}/${userId}`);
+      return await res.json();
+    }
+
+    async function loadMonthlyExpenses() {
+      const data = await fetchData("monthly-summary");
+      const months = data.map(entry => `Month ${entry.month}`);
+      const amounts = data.map(entry => parseFloat(entry.total_spent));
+
+      new Chart(document.getElementById('expensesChart'), {
+        type: 'bar',
+        data: {
+          labels: months,
+          datasets: [{
+            label: '₹ Spent',
+            data: amounts,
+            backgroundColor: '#5B86E5',
+            borderRadius: 8
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: context => `₹ ${context.parsed.y.toFixed(2)}`
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: value => `₹ ${value}`
+              }
+            }
+          }
+        }
+      });
+    }
+
+    async function loadTopCategories() {
+      const data = await fetchData("top-categories");
+      const categories = data.map(entry => entry.category);
+      const amounts = data.map(entry => parseFloat(entry.total_spent));
+
+      new Chart(document.getElementById("categoryChart"), {
+        type: "pie",
+        data: {
+          labels: categories,
+          datasets: [{
+            data: amounts,
+            backgroundColor: [
+              "#FF6384", "#36A2EB", "#FFCE56", "#6c5ce7", "#00cec9"
+            ],
+            borderColor: "#ffffff",
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          aspectRatio: 1,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { color: '#2c3e50' }
+            }
+          }
+        }
+      });
+    }
+
+    async function loadDailySpending() {
+      const data = await fetchData("daily-spending");
+      const dates = data.map(entry => entry.date);
+      const totals = data.map(entry => parseFloat(entry.total_spent));
+
+      new Chart(document.getElementById("dailyChart"), {
+        type: "line",
+        data: {
+          labels: dates,
+          datasets: [{
+            label: "₹ Spent",
+            data: totals,
+            fill: true,
+            borderColor: "#00b894",
+            backgroundColor: "rgba(0,184,148,0.15)",
+            tension: 0.4,
+            pointRadius: 3,
+            pointHoverRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: context => `₹ ${context.parsed.y.toFixed(2)}`
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: value => `₹ ${value}`
+              }
+            }
+          }
+        }
+      });
+    }
+
+    loadMonthlyExpenses();
+    loadTopCategories();
+    loadDailySpending();
+  </script>
+
+</body>
+</html>
