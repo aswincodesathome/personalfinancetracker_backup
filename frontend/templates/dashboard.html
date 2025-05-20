@@ -11,9 +11,11 @@
 
   <!-- Floating Chatbot Button -->
   <a href="/chatbot"
-    class="fixed bottom-6 right-6 bg-indigo-600 text-white p-4 rounded-full shadow-lg hover:bg-indigo-700 transition-all z-50"
-    title="Chat with FinBot">
-    💬
+    class="fixed bottom-6 right-6 bg-indigo-600 text-white px-5 py-3 rounded-full shadow-lg hover:bg-indigo-700 transition-all z-50 flex items-center gap-2">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M7 8h10M7 12h6m-2 8h2a4 4 0 004-4V7a4 4 0 00-4-4H9a4 4 0 00-4 4v9a4 4 0 004 4z" />
+    </svg>
+    <span class="hidden lg:block text-sm font-medium">Chat with FinBot</span>
   </a>
 
   <!-- Navbar -->
@@ -25,7 +27,7 @@
         <a href="#" class="text-indigo-600 font-semibold">Dashboard</a>
         <a href="/goals" class="hover:text-indigo-600">Goals</a>
         <a href="/expenses/add_expense/{{ user_id }}" class="hover:text-indigo-600">Add Expense</a>
-        <a href="/logout" class="hover:text-indigo-600">Logout</a>
+        <a href="/users/logout" class="hover:text-indigo-600">Logout</a>
       </div>
     </div>
   </nav>
@@ -82,7 +84,6 @@
         class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition text-sm font-medium shadow">
       📊 View Analytics
     </a>
-
     <a href="/summary/history/{{ user_id }}"
        class="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition text-sm font-medium shadow">
       📄 View Summary

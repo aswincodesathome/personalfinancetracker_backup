@@ -44,9 +44,9 @@ def get_goals():
             'goal_id': goal.goal_id,
             'title': goal.title,
             'target_amount': float(goal.target_amount),
-            'current_amount': float(goal.current_amount),
             'deadline': goal.deadline.strftime('%Y-%m-%d'),
-            'progress': float(balance)
+            'saved_amount': float(balance),  # This is balance
+            'percent': round(min(balance / goal.target_amount * 100, 100), 1)  # Cap at 100%
         } for goal in goals]
         return jsonify(goals_list), 200
     except Exception as e:

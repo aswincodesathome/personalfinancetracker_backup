@@ -48,37 +48,46 @@
   </main>
 
   <script>
-    function sendMessage() {
+    async function sendMessage() {
       const input = document.getElementById('userInput');
       const message = input.value.trim();
       if (message === '') return;
 
       const chatbox = document.getElementById('chatbox');
 
-      // User message
+      // Show user message
       const userMsg = document.createElement('div');
       userMsg.className = 'chat-bubble user self-end';
       userMsg.innerText = message;
       chatbox.appendChild(userMsg);
 
-      // Bot reply
-      const botMsg = document.createElement('div');
-      botMsg.className = 'chat-bubble bot self-start';
-      botMsg.innerText = generateReply(message);
-      setTimeout(() => {
+      // Send message to backend
+      try {
+        const response = await fetch('/chatbot', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ message })
+        });
+
+        const data = await response.json();
+
+        // Show bot response
+        const botMsg = document.createElement('div');
+        botMsg.className = 'chat-bubble bot self-start';
+        botMsg.innerText = data.reply;
         chatbox.appendChild(botMsg);
         chatbox.scrollTop = chatbox.scrollHeight;
-      }, 600);
+
+      } catch (error) {
+        const botMsg = document.createElement('div');
+        botMsg.className = 'chat-bubble bot self-start';
+        botMsg.innerText = "⚠️ Something went wrong. Please try again later.";
+        chatbox.appendChild(botMsg);
+      }
 
       input.value = '';
-    }
-
-    function generateReply(msg) {
-      msg = msg.toLowerCase();
-      if (msg.includes("expense")) return "To view or add expenses, head to the 'Add Expense' page!";
-      if (msg.includes("hello") || msg.includes("hi")) return "Hey hey! 👋 How can I assist you today?";
-      if (msg.includes("income")) return "Your income details are available on the dashboard.";
-      return "Sorry, I'm still learning that. Try asking something about your finances.";
     }
   </script>
 </body>

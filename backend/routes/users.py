@@ -98,3 +98,12 @@ def get_user_id():
         return jsonify({"user_id": session['user_id']})
     return jsonify({"error": "Not logged in"}), 401
 
+@users_bp.route('/chatbot')
+def show_chatbot():
+    return render_template('chatbot.html')
+# ✅ Logout route
+# ✅ Logout route
+@users_bp.route('/logout')
+def logout():
+    session.clear()
+    return render_template('index.html')  # Or redirect to home if you want

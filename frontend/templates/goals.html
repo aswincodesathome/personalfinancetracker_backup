@@ -54,6 +54,7 @@
         .goal {
             border-bottom: 1px solid #ddd;
             padding: 15px 0;
+            position: relative;
         }
 
         .goal:last-child {
@@ -85,103 +86,198 @@
             font-weight: bold;
             margin-top: 5px;
         }
+
+        .delete-tab {
+            display: inline-block;
+            font-size: 12px;
+            background-color: #ffcdd2;
+            color: #b71c1c;
+            padding: 5px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .delete-tab:hover {
+            background-color: #ef9a9a;
+        }
+
+        .confirm-box {
+            background-color: #fff3e0;
+            padding: 10px;
+            margin-top: 8px;
+            border: 1px solid #ffcc80;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .confirm-box button {
+            width: auto;
+            padding: 6px 12px;
+            margin: 5px 5px 0 0;
+            font-size: 14px;
+        }
+
+        .message {
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .message.success {
+            background-color: #c8e6c9;
+            color: #256029;
+        }
+
+        .message.error {
+            background-color: #ffcdd2;
+            color: #b71c1c;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🎯 My Financial Goals</h1>
-        <h3 style="color: #0d47a1;">Available Balance: ₹{{ '%.2f' % balance }}</h3>
+<div class="container">
+    <h1>🎯 My Financial Goals</h1>
+    <h3 style="color: #0d47a1;">Available Balance: ₹{{ '%.2f' % balance }}</h3>
 
-        <!-- Add Goal Section -->
-        <div class="card">
-            <h2>Add New Goal</h2>
-            <form id="goalForm">
-                <input type="text" id="title" placeholder="Goal Title" required>
-                <input type="number" id="target_amount" placeholder="Target Amount (₹)" step="0.01" min="0" required>
-                <input type="date" id="deadline" required>
-                <button type="submit">Add Goal</button>
-            </form>
-        </div>
-
-        <!-- View Goals Section -->
-        <div class="card">
-            <h2>View Goals</h2>
-            <div id="goalsContainer" class="goals-list"></div>
-        </div>
+    <!-- Add Goal -->
+    <div class="card">
+        <h2>Add New Goal</h2>
+        <form id="goalForm">
+            <input type="text" id="title" placeholder="Goal Title" required>
+            <input type="number" id="target_amount" placeholder="Target Amount (₹)" step="0.01" min="0" required>
+            <input type="date" id="deadline" required>
+            <button type="submit">Add Goal</button>
+            <div id="addGoalMsg" class="message" style="display:none;"></div>
+        </form>
     </div>
 
-    <script>
-        const goalForm = document.getElementById('goalForm');
-        const goalsContainer = document.getElementById('goalsContainer');
+    <!-- View Goals -->
+    <div class="card">
+        <h2>View Goals</h2>
+        <div id="goalsContainer"></div>
+    </div>
+</div>
 
-        // Load goals on page load
-        window.onload = fetchGoals;
+<script>
+    const goalForm = document.getElementById('goalForm');
+    const goalsContainer = document.getElementById('goalsContainer');
+    const addGoalMsg = document.getElementById('addGoalMsg');
 
-        function fetchGoals() {
-            fetch('/goals')
-                .then(res => res.json())
-                .then(data => {
-                    goalsContainer.innerHTML = '';
-                    if (!Array.isArray(data) || data.length === 0) {
-                        goalsContainer.innerHTML = '<p class="no-goals">No goals found. Add your first goal above.</p>';
-                        return;
-                    }
+    window.onload = fetchGoals;
 
-                    data.forEach(goal => {
-                        const percent = Math.min((goal.current_amount / goal.target_amount) * 100, 100).toFixed(1);
-                        const completed = percent >= 100;
+    function showMessage(msg, isSuccess = true) {
+        addGoalMsg.style.display = 'block';
+        addGoalMsg.className = 'message ' + (isSuccess ? 'success' : 'error');
+        addGoalMsg.textContent = msg;
 
-                        const div = document.createElement('div');
-                        div.className = 'goal';
-                        div.innerHTML = `
-                            <strong>${goal.title}</strong><br>
-                            Target: ₹${goal.target_amount} | Saved: ₹${goal.current_amount}<br>
-                            Deadline: ${goal.deadline}<br>
-                            Progress: ${percent}%
-                            <div class="progress-bar">
-                                <div class="progress-fill" style="width:${percent}%;"></div>
-                            </div>
-                            ${completed ? '<div class="completed">✅ Goal Completed!</div>' : ''}
-                        `;
-                        goalsContainer.appendChild(div);
-                    });
-                })
-                .catch(() => {
-                    goalsContainer.innerHTML = '<p class="no-goals">Something went wrong while loading goals.</p>';
-                });
-        }
+        setTimeout(() => {
+            addGoalMsg.style.display = 'none';
+        }, 3000);
+    }
 
-        goalForm.onsubmit = function (e) {
-            e.preventDefault();
-
-            const title = document.getElementById('title').value.trim();
-            const target_amount = parseFloat(document.getElementById('target_amount').value);
-            const deadline = document.getElementById('deadline').value;
-
-            if (!title || !target_amount || !deadline) {
-                alert("Please fill in all fields.");
-                return;
-            }
-
-            fetch('/goals', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title, target_amount, deadline })
-            })
+    function fetchGoals() {
+        fetch('/goals')
             .then(res => res.json())
             .then(data => {
-                if (data.message) {
-                    alert(data.message);
-                    fetchGoals();
-                    goalForm.reset();
-                } else {
-                    alert(data.error || 'Error adding goal.');
+                goalsContainer.innerHTML = '';
+                if (!Array.isArray(data) || data.length === 0) {
+                    goalsContainer.innerHTML = '<p class="no-goals">No goals found. Add your first goal above.</p>';
+                    return;
                 }
+
+                data.forEach(goal => {
+                    const div = document.createElement('div');
+                    div.className = 'goal';
+                    div.setAttribute('data-goal-id', goal.goal_id);
+
+                    div.innerHTML = `
+                        <strong>${goal.title}</strong><br>
+                        Target: ₹${goal.target_amount} | Saved: ₹${goal.saved_amount.toFixed(2)}<br>
+                        Deadline: ${goal.deadline}<br>
+                        Progress: ${goal.percent}%
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width:${goal.percent}%;"></div>
+                        </div>
+                        ${goal.percent >= 100 ? '<div class="completed">✅ Goal Completed!</div>' : ''}
+                        <div class="delete-tab" onclick="showConfirmBox(this)">Delete</div>
+                    `;
+                    goalsContainer.appendChild(div);
+                });
             })
             .catch(() => {
-                alert('Network error while adding goal.');
+                goalsContainer.innerHTML = '<p class="no-goals">Unable to load goals. Please try again later.</p>';
             });
-        };
-    </script>
+    }
+
+    function showConfirmBox(tabElement) {
+        // Remove any open confirmation boxes
+        document.querySelectorAll('.confirm-box').forEach(el => el.remove());
+
+        const parent = tabElement.parentElement;
+        const goalId = parent.getAttribute('data-goal-id');
+
+        const box = document.createElement('div');
+        box.className = 'confirm-box';
+        box.innerHTML = `
+            Are you sure you want to delete this goal?<br>
+            <button onclick="deleteGoal(${goalId}, this)">Yes, Delete</button>
+            <button onclick="this.parentElement.remove()">Cancel</button>
+        `;
+        parent.appendChild(box);
+    }
+
+    function deleteGoal(goalId, btn) {
+        fetch(`/goals/${goalId}`, {
+            method: 'DELETE'
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.message) {
+                const goalDiv = btn.closest('.goal');
+                goalDiv.remove();
+                showMessage("Goal deleted successfully.", true);
+            } else {
+                showMessage(data.error || 'Could not delete goal.', false);
+            }
+        })
+        .catch(() => {
+            showMessage('Network error. Please try again.', false);
+        });
+    }
+
+    goalForm.onsubmit = function (e) {
+        e.preventDefault();
+
+        const title = document.getElementById('title').value.trim();
+        const target_amount = parseFloat(document.getElementById('target_amount').value);
+        const deadline = document.getElementById('deadline').value;
+
+        if (!title || !target_amount || !deadline) {
+            showMessage("Please fill in all the fields.", false);
+            return;
+        }
+
+        fetch('/goals', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, target_amount, deadline })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.message) {
+                showMessage(data.message, true);
+                fetchGoals();
+                goalForm.reset();
+            } else {
+                showMessage(data.error || 'Failed to add goal.', false);
+            }
+        })
+        .catch(() => {
+            showMessage('Network error. Could not add goal.', false);
+        });
+    };
+</script>
 </body>
 </html>

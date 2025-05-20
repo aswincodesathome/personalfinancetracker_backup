@@ -2,75 +2,71 @@
 CREATE DATABASE IF NOT EXISTS finance_tracker;
 USE finance_tracker;
 
+-- USERS TABLE
 CREATE TABLE users (
     user_id INT PRIMARY KEY AUTO_INCREMENT,
     full_name VARCHAR(100) NOT NULL,
-    email VARCHAR(100) UNIQUE NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    age INT CHECK (age >= 0 AND age <= 120),
-    working_status VARCHAR(20) CHECK (working_status IN ('working', 'student', 'unemployed')),
+    age INT,
+    working_status VARCHAR(20),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create Category Table
+-- CATEGORY TABLE
 CREATE TABLE category (
     category_id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL
 );
 
--- Create Payment Methods Table
-CREATE TABLE payment_methods (
-    method_id INT PRIMARY KEY AUTO_INCREMENT,
-    user_id INT,
-    method_name VARCHAR(100) NOT NULL,
-    card_number VARCHAR(20),
-    expiry_date DATE,
-    bank_name VARCHAR(100),
-    FOREIGN KEY (user_id) REFERENCES users(user_id)
+-- PAYMENT METHOD TABLE
+CREATE TABLE payment_method (
+    payment_method_id INT PRIMARY KEY AUTO_INCREMENT,
+    method_name VARCHAR(50) NOT NULL
 );
 
--- Create Income Table
+-- INCOME TABLE
 CREATE TABLE income (
     income_id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT,
     source VARCHAR(100) NOT NULL,
-    amount DECIMAL(10, 2) NOT NULL CHECK (amount >= 0),
+    amount DECIMAL(10,2) NOT NULL,
     received_on DATE,
     FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
 
--- Create Expense Table
+-- EXPENSES TABLE
 CREATE TABLE expenses (
     expense_id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT,
     category_id INT,
     payment_method_id INT,
-    amount DECIMAL(10, 2) NOT NULL CHECK (amount >= 0),
+    amount DECIMAL(10,2) NOT NULL,
     spent_on DATE,
     description VARCHAR(255),
     FOREIGN KEY (user_id) REFERENCES users(user_id),
     FOREIGN KEY (category_id) REFERENCES category(category_id),
-    FOREIGN KEY (payment_method_id) REFERENCES payment_methods(method_id)
+    FOREIGN KEY (payment_method_id) REFERENCES payment_method(payment_method_id)
 );
 
--- Create Budget Table
-CREATE TABLE budget (
-    budget_id INT PRIMARY KEY AUTO_INCREMENT,
-    user_id INT,
-    category_id INT NOT NULL,
-    amount DECIMAL(10, 2) NOT NULL CHECK (amount >= 0),
-    month VARCHAR(7),
-    FOREIGN KEY (user_id) REFERENCES users(user_id),
-    FOREIGN KEY (category_id) REFERENCES category(category_id)
-);
-
--- Create Goals Table
+-- GOALS TABLE
 CREATE TABLE goals (
     goal_id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT,
     title VARCHAR(100),
-    target_amount DECIMAL(10, 2) NOT NULL CHECK (target_amount > 0),
-    current_amount DECIMAL(10, 2) DEFAULT 0.00,
+    target_amount DECIMAL(10,2) NOT NULL,
+    current_amount DECIMAL(10,2) DEFAULT 0.00,
     deadline DATE NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(user_id)
+);
+
+-- BUDGET TABLE
+CREATE TABLE budget (
+    budget_id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT,
+    category_id INT NOT NULL,
+    amount DECIMAL(10,2) NOT NULL,
+    month VARCHAR(7),
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    FOREIGN KEY (category_id) REFERENCES category(category_id)
 );

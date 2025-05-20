@@ -1,7 +1,7 @@
 import os
 import sys
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
+from flask import render_template  # Add this at the top if not already imported
 from flask import Flask, session, jsonify  # Added jsonify import
 from flask_cors import CORS
 from flask_migrate import Migrate
@@ -19,7 +19,7 @@ from routes.categories import categories_bp
 from routes.payment_methods import payment_bp
 from routes.summary import summary_bp
 from routes.analytics import analytics_bp
-
+from routes.chatbot import chatbot_bp
 # Flask app setup
 app = Flask(__name__, template_folder='../frontend/templates')
 CORS(app)
@@ -53,11 +53,11 @@ app.register_blueprint(categories_bp, url_prefix="/categories")
 app.register_blueprint(payment_bp)
 app.register_blueprint(summary_bp)  
 app.register_blueprint(analytics_bp, url_prefix="/analytics")
-
+app.register_blueprint(chatbot_bp)
 # Test route
 @app.route('/')
 def home():
-    return '🎉 Personal Finance Tracker Backend is Running with MySQL! 🎉'
+    return render_template('index.html')  # Now it shows the homepage
 
 @app.route('/get_user_id')
 def get_user_id():
